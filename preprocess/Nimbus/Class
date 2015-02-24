@@ -1,0 +1,307 @@
+#! /bin/tcsh
+# Function: PREPROCESS_SUB
+#
+# Created by Tor Wager, 2 / 22 / 04
+# Modified by Christopher Currie, 3 / 2 / 02
+
+# FUNCTION: process_subject examDesc_Code
+#           where examDesc_Code is a string, ow1, ow2, ... , ow8 (don't quote the string input)
+#
+# NOTES:  
+# mdir is the subject directory for preprocessed data, i.e., ow1, ow2, ... , ow8
+# img has names of 4-D images, one for each run
+# images for each run are saved in mdir/scan1, scan2, etc.
+
+echo $SHELL
+
+if ($#argv < 2) then
+  echo please type in: process_subject sidcode and 1 for reconstruction and build anatomicals or 0 for no reconstruction and build
+  echo "e.g., 'preprocess_sub ow1 1' (for reconstruction, build anatomicals, and preprocessing)"
+  echo "      'preprocess_sub ow1 0' (for preprocessing and NO reconstruction and build)"
+  exit 1
+else
+  set exptname = $argv[1]
+  echo working on subject $exptname
+  set reconstruct = $argv[2]
+  echo reconstruction flag set to: $reconstruct
+endif
+
+# ----------------------
+# sdt to analyze
+# ----------------------
+
+set mdir = "/export/data/analyzed/tor/Class/$exptname"
+switch ($reconstruct)
+     case 1:
+           if ( -e $mdir ) then
+               echo Directory $mdir exists . . .
+           else
+               mkdir $mdir
+               echo "Created directory: $mdir"
+           endif
+     
+           cd /export/data/reconstruction 
+           echo changing to directory: /export/data/reconstruction
+
+           set runs = `ls $exptname`
+           echo Processing runs: $runs
+           echo Output saved in $mdir/log.txt
+           echo Starting reconstruction for $exptname
+           #
+           # NOTE: the 'matlab' & 'EOF' statements must start in the leftmost column
+           #
+matlab << EOF >& $mdir/log.txt
+           addpath /export/data/analyzed/tor/
+           addpath /home/twager/scripts
+           exptname = '$exptname/';
+           runs = '$runs';
+           mdir = '$mdir';
+
+           tor_sdt2an(exptname,runs,mdir) 
+           quit
+EOF
+          echo Finished reconstruction for $exptname
+          echo 
+          echo Start building anatomicals
+matlab << EOF >& $mdir/log.txt
+          addpath /export/data/analyzed/tor/
+          addpath /export/apps/spm99_macosx
+          addpath /home/twager/scripts
+          exptname = '$exptname/';
+          outputFileBase = '/export/data/analyzed/tor/Class';
+
+          tor_mr2an(exptname,outputFileBase)
+          quit
+EOF
+          echo Finished building anatomicals
+          echo 
+          breaksw
+    case 0:
+          echo No reconstruction done for $exptname
+          echo
+          breaksw
+endsw
+      
+# change to the subject directory (e.g., /ow1)
+cd $mdir
+echo changing to directory $mdir 
+#
+set d = `ls r?.img`
+echo Found 4D Images: $d
+
+#
+# What we want to do is motion correct the entire experiment, i.e., all the data 
+# across all the runs, with reference to the first TR of the first run.
+# This for loop will 
+#   1st) time slice correct each run's 4D image
+#   2nd) break each slice time corrected 4D image into it's component 3D image files (i.e., one file holding one TR (or volume) scan of 
+#        the entire structure that we're interested in) and place all the 3D images in a separate "scan" directory (e.g., "scan1" for the 
+#        first run). The reason we want 3D images is that the motion correction algorithm only operates on 3D images.
+#
+# Looking ahead: after doing all this, we'll concat. all the 3D images from all the runs and motion correct the entire experiment.
+#
+foreach img ( $d )  # img will be successively assigned the file name of each 4D image file.
+	#
+        #  make sure we're in the subject directory
+	cd $mdir
+	echo Working on $img
+        # 
+        #  echo $img sends a 4D .img file name to the std. output,
+        #  the file name is pipped into cut that removes everything after the '.' leaving just the file name, e.g., "r1"
+        #
+	set inname=`echo $img | cut -f1 -d'.'`
+        # 
+        #  prefix the filename with "a" to denote slice time correction, e.g., "ar1"
+        #
+	set aname = a$inname
+        # 
+        #  Get the run or scanning session number from the file name:
+        #      echo $img returns the 4D .img filename to the std. output, e.g., "r1.img"
+        #      cut -f2 -d'r': trims off the 'r' leaving "1.img"
+        #      cut -f1 -d'.': trims off the .img leaving just the number.
+        #
+	set runname = `echo $img | cut -f2 -d'r' | cut -f1 -d'.'`
+        #
+        # inname is the 4D file name w/out the "img" extention, e.g., "r1" (& aname is "ar1")
+        # This slice time corrected "a" files are written to the subject directory (e.g., "ow1")
+        #
+	slicetimer -i $inname --out=$aname -r 2.0 --ocustom=/home/twager/sliceorder.rtf
+        #
+        # make a directory to hold just one session's worth of data, e.g., "scan1"
+        #
+        if ( -e scan$runname ) then
+            echo scan$runname exists . . .
+        else
+            echo making directory scan$runname
+	    mkdir scan$runname
+        endif
+        #
+        # slicetimer creates a correct 4D image file and an associated header file: move them into 
+        # the directory we just created, e.g., "scan1"
+        #
+	mv $aname.hdr scan$runname/
+	mv $aname.img scan$runname/
+	cd scan$runname
+	#
+        # 
+        # don't discard any images in the first run: want to save very first image of run 1 
+        # because it's of the highest constrast for use in motion correction
+        #
+        if ( $runname == 1 ) then
+	    ana4dto3d -m -v $aname.img
+            if ( -e firstTR ) then
+                echo firstTR exists . . .
+            else
+               echo making firstTR directory
+               mkdir firstTR
+            endif
+            cp ar?_0001.img refVol.img
+            cp ar?_0001.hdr refVol.hdr
+            mv refVol.* firstTR
+            # now discard the next two volumes (we never analyze the first 3 TRs, so discard them
+            rm ar?_0002.*
+            rm ar?_0003.* 
+        else
+            # discard first 3 TRs right off the bat
+	    ana4dto3d -d 3 -m -v $aname.img
+        endif
+        echo gzip the slicetime corrected 4D images $aname 
+        gzip --best -f $aname.*
+        #
+        # The output of ana4dto3d will be a set of files: ar1_????.img (and ar1_????.hrd) where ???? is the specific 
+        # TR or volume number.  If the scanning session was 360 sec and the TR was 2 sec, we should have 180 3D files,
+        # minus any discard images.  If any are discarded, say 3, then the first TR number will be 0004.
+        # 		
+	cd -
+
+end
+	# make bigfile, a variable that has the name of the output file -- 
+	# list all the files in all directores, EXCEPT 4-d ones!!  
+
+        # change dir to subject directory level (e.g., ow1)
+	cd $mdir
+	set bigfile = "avolumes.img"
+	set allnames = `ls scan*/ar?_????.img`
+
+	echo Merging files into $bigfile
+	avwmerge -t $bigfile $allnames
+	
+	echo Motion correction started for $bigfile in directory $mdir
+	mcflirt -in $bigfile -out r$bigfile -plots -refvol 1 -rmsrel -rmsabs -plots	
+
+	echo Success! Splitting r$bigfile into 3D volumes
+	avwsplit r$bigfile
+        # will create vol?????.img and .hdr files where ?????=00000 to whatever 
+        # total number of TRs there are across all scanning sessions
+       echo Splitting completed!
+
+# This portion of the script addresses a problem where we merged all the timeslice corrected 3d images files in each
+# scan directory into one big 3d image file.  We then McFlirt that and then use avwsplit to create
+# vol?????.img and .hdr files where ?????=00000 to whatever total number of TRs there are across all
+# scanning sessions (see the above code).
+# 
+# The script below "figures out" which scanning session (or scan directory -- there's 8, scan1, ... , scan8)
+# a given vol?????.,img file belongs to, renames it (i.e., it adds a subject code and scan session
+# number), and then moves it into that scan directory.
+#
+cd $mdir
+set d = `ls -d scan?`
+echo found scan directories: $d
+@ start = 0
+#
+# get a list of all the motion corrected volumes for the subject (over all the runs or scanning sessions)
+#
+set flist = `ls vol*.img`
+foreach dir ( $d )
+   #
+   # get the  number at the end of the directory name, i.e., "1" at the end of "scan1"
+   #
+   set dirNum=`echo $dir | cut -c 5-5`
+   #
+   # count all the ar files (motion correct) volumes in a scan directory
+   #
+   set trCnt = `ls -l scan$dirNum/ar$dirNum\_????.img | grep "^-" | wc -l`
+   #
+   # "cnt"  will serve as an index to each file in $flist
+   # "start" and "end" will bound "cnt" such that if start <= cnt <= end, then
+   # the indexed file in $flist will be renamed and moved into whatever
+   # scan directory $dir is pointing to.
+   #
+   @ end = $start + $trCnt - 1
+   echo $start to $end
+   @ cnt = 0
+   #
+   # Work my way through $flist
+   foreach f ( $flist )
+                @ cnt+=1
+                 if ( $cnt >= $start && $cnt <= $end) then
+                     echo changing $f to $exptname\_$dir\_$f
+                     cp $f $exptname\_$dir\_$f
+                     echo move $exptname\_$dir\_$f to $dir
+                     mv $exptname\_$dir\_$f $dir
+
+                     echo rename and move assoicated hdr files
+                     set volname=`echo $f | cut -f1 -d'.'`
+                     cp $volname.hdr $exptname\_$dir\_$volname.hdr
+                     echo move $exptname\_$dir\_$volname.hdr to $dir 
+                     mv $exptname\_$dir\_$volname.hdr $dir
+
+                 endif
+   end
+   @ start = $start + $trCnt
+   #
+end
+echo Finished moveing $exptname volume images into scanning directories
+#
+cd $mdir
+echo removed motion correct images in subject directory $mdir
+rm vol*.*
+
+# echo tar and zip all the 3D time sliced volumes in all the scan directories
+echo del all the 3D time sliced volumes
+set scan = `ls -d scan?`
+foreach dir ($scan)
+        cd $dir
+        # tar cvf tmeSliced3D.tar ar?_????.*
+        # gzip -best -f tmeSliced3D.tar
+        rm ar?_????.*
+        cd ..
+end
+cd $mdir
+echo tar and zip all motion corrected volumes in each scan directory
+set scan = `ls -d scan?`
+foreach dir ($scan)
+              cd $dir
+              tar cvf $dir\_motionCorrected3d.tar $exptname\_$dir\_vol*.*
+              gzip --best $dir\_motionCorrected3d.tar
+              echo moved tarred and zipped 3d aligned images to main subject directory
+              mv $dir\_motionCorrected3d.tar.gz ../
+              rm $exptname\_$dir\_vol*.*
+              rm vol*.*
+              echo removing all motion corrected 3d volumes
+              cd ..
+end
+#
+cd $mdir
+echo zip up the 4D reconstructed files
+tar cvf $exptname\_4Dreconstructed.tar r?.*
+gzip --best $exptname\_4Dreconstructed.tar
+#
+# coregister the hi-res anatomical to the first TR of the first scanning session
+# "scnlab_coreg_anat2funct" lives in /home/twager/scripts 
+cd $mdir
+# matlab << EOF >& log.txt
+#         addpath /export/apps/spm99_macosx
+#        addpath /home/twager/scripts
+#        scnlab_coreg_anat2funct('anatomy/esT1_s5.img','scan1/firstTR/refVol.img')
+#        quit
+# EOF
+#
+echo tar and zip this subjects anatomicals
+cd $mdir/anatomy
+echo Taring and zipping es anatomy files in $mdir/anatomy
+tar cvf $exptname\_Anatomy.tar *.*
+gzip --best $exptname\_Anatomy.tar
+mv $exptname\_Anatomy.tar.gz ../
+echo move tarred and zipped anatomicals to subject directory
+ 

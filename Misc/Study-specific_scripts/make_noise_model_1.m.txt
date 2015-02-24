@@ -1,0 +1,101 @@
+% Looks for outputs of canlab_preproc
+% Creates noise_model_1.mat that stores SPM-style R matrix containing:
+%   spikes from scn_spike_id (?)
+%   realignment parameters (6)
+%   squared realignment parameters (6)
+%   derivatives of realignment parameters (6)
+%   squared derivatives of realignment parameters (6) 
+% These are found in the nuisance_covs matrix in scn_session_spike_id_output.mat
+% and the rp_*.txt files produced by motion correction.
+%
+% To use, make a copy of this script and put it in your study's Imaging
+% or scripts directory, remove the .txt extension, then modify the variables
+% in the demarcated part at the top of the script (and anything else, if need be).
+% 
+% Requires wagerlab repository on path.
+%
+
+
+clear
+startwd = pwd;
+
+
+%% SETUP (this stuff will need to be fitted to a study)
+%-------------------------------------------------------
+% will create <funcdir>/<outdirname>/<outfilename>.mat
+outfilename = 'noise_model_1';
+outdirname = 'new_timing_files';
+
+% use the following lines if script not being run from the imaging directory
+% imagingdir = '/data/projects/wagerlab/labdata/current/ilcp/Imaging';
+% cd(imagingdir);
+
+% get cell array of subjects
+subs = filenames('ilcp[0-9]*[0-9]','absolute');
+
+% assumes <subdir>/qc_images/scn_session_spike_id_output.mat
+
+% a wildcard to capture all functional data directories
+% (path starts at <subdir>)
+funcdirwc = 'Functional/Preprocessed/s*';
+%-------------------------------------------------------
+
+%%% (you shouldn't need to modify anything below)
+
+
+
+%% NUISANCE REGRESSORS
+fprintf('... MAKING NUISANCE FILES (spikes + motion)\n')
+for s = 1:numel(subs)
+    fprintf('... WORKING on %s\n',subs{s});
+    % load spike file
+    spikeidfile = fullfile(subs{s}, 'qc_images', 'scn_session_spike_id_output.mat');
+    try
+        spikeid = load(spikeidfile);
+    catch
+        warning(['could not load ' char(spikeidfile)]);
+        continue
+    end
+    
+    % data check
+    funcdirs = filenames(fullfile(subs{s}, funcdirwc));
+    if numel(funcdirs) ~= numel(spikeid.nuisance_covs)
+        fprintf('SKIPPING: number of spike files and run directories don''t match\n\n')
+        continue
+    end
+    
+    % go through runs
+    for i = 1:numel(spikeid.nuisance_covs)
+        % set up output file
+        dout = fullfile(funcdirs{i}, outdirname);
+        if ~exist(dout, 'dir'), mkdir(dout); end
+        fout = fullfile(dout, outfilename);
+        if exist([fout '.mat'], 'file')
+            fprintf('... SKIPPING: %s exists\n', fout);
+            continue
+        end
+        
+        % get motion parameters
+        motionfile = filenames(fullfile(funcdirs{i}, 'rp_*txt'), 'char');
+        if ~exist(motionfile, 'file')
+            fprintf('... SKIPPING %s: motion file (rp_*.txt) does not exist\n', funcdirs{i})
+            continue
+        end
+        rp = importdata(motionfile);
+        % add squares, derivatives, and squared derivatives        
+        rp = zscore(rp);
+        rpd = [zeros(1,6); diff(rp)];
+        rp = [rp, rp.^2, rpd, rpd.^2];
+
+        R = [spikeid.nuisance_covs{i}(:,2:end) rp];
+        try
+            save(fout, 'R');
+            fprintf('... MADE %s\n',fout);
+        catch
+            warning(['could not write ' fout]);
+        end
+    end
+    fprintf('\n');
+end
+
+cd(startwd);

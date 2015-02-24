@@ -1,0 +1,51 @@
+
+
+% This code creates some 'BOLD' data
+% and then estimates the PSTH using an FIR model
+% W. Penny, Oct 2003
+
+N=200;
+num_events=20;
+
+% Define FIR
+bin_width=2; % scans
+num_bins=10; % scans
+
+% You'll have 'onsets' already
+% - use those, not these.
+onsets=randperm(N);
+onsets=onsets(1:num_events);
+
+delta_events=zeros(N,1);
+delta_events(onsets)=1;
+events=conv(delta_events,ones(bin_width,1));
+events=events(1:N);
+
+% These are the relevant lines for you
+clear X;
+X(:,1)=events;
+for b=2:num_bins,
+    X(:,b)=[zeros(bin_width,1); X(1:N-bin_width,b-1)];
+end
+X=[X ones(N,1)];
+
+figure
+imagesc(X);
+title('Design matrix for FIR model');
+
+% Create some 'BOLD' data
+RT=1;
+hrf=spm_hrf(RT);
+X_create=conv(delta_events,hrf);
+X_create=X_create(1:N);
+y=X_create*1.5+0.1*randn(N,1);
+figure
+plot(y);
+title('Data');
+
+% Fit FIR model - these lines also relevant
+beta=pinv(X)*y;
+figure
+bar(RT*bin_width*[1:num_bins],beta(1:num_bins));
+title('PSTH');
+xlabel('Seconds');

@@ -1,0 +1,30 @@
+#!/bin/tcsh -f
+
+if ($# == 0) then
+   echo ""	
+   echo "fixtiming.  written by Luis Hernandez-Garcia at UM"
+   echo "This script undoes the timing interpolation and then reapplies the correction"
+   echo ""	
+   echo " USAGE:"
+   echo " 	fixtiming TR" 
+   echo ""
+   exit
+endif
+
+
+set TR=$1
+
+set num=`ls -1 ravol*.img | wc | awk '{print $1}'`
+echo "the number of scans is $num"
+
+echo "Un-doing Slice timing correction  .... "
+ls -1 ravol*.img > files.txt
+interpsinc -t $TR -n $num -a 2 -f files.txt
+
+echo "Re-doing Slice timing correction  .... "
+ls -1 aravol*.img > files.txt
+interpsinc -t $TR -n $num -a 2 -f files.txt
+
+rm aravol*
+
+exit

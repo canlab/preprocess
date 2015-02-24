@@ -1,0 +1,99 @@
+TOR = 
+          estimatemodel: 0
+      estimatecontrasts: 1
+             getresults: 0
+               refslice: 1
+                  fmriT: 16
+                     RT: 1.5000
+                     MT: 4
+                 imgdir: {1x6 cell}
+                 resdir: 'C:\Tor_Documents\CurrentExperiments\Intext\FMRI\RESULTS\model3\020725js'
+            imgwildcard: 'sn*img'
+               numscans: 6
+           vardurations: 0
+                  Ptype: 'none'
+                  Etype: 'linear'
+                    Rov: 'events'
+                    Cov: 1
+                  epoch: [1x1 struct]
+                      c: {1x42 cell}
+                      v: 7
+                  Cname: {'AttendColor'  'Judge1'  'J2_SoSa'  'J2_SoNa'  'J2_NoSa'  'J2_NoNa'  'StimOnset'}
+               Volterra: 0
+                  userc: 0
+                 Global: 'None'
+                    cLF: 'specify'
+                 HParam: [180 180 180 180 180 180]
+                  LFstr: '180  180  180  180  180  180'
+                    cHF: 'none'
+                    cVi: 'none'
+                  bFcon: 0
+                bEstNow: 1
+    maskWOtherContrasts: 0
+        multCompCorrect: 'uncorrected'
+                      u: 0.0050
+                      k: 10
+                     Ic: 'all'
+               imgnames: {[0x63 char]}
+              dobigmask: 0
+	...Making xCon.mat
+	-----------------------------------------------
+	...making contrast 1
+
+contrast Stim onset (type T) already in xCon	...making contrast 2
+
+contrast Attend obj (type T) already in xCon	...making contrast 3
+
+contrast Judge 1  vs Baseline (type T) already in xCon	...making contrast 4
+
+contrast ObjectME (type T) already in xCon	...making contrast 5
+
+contrast AttME (type T) already in xCon	...making contrast 6
+
+contrast Interact (type T) already in xCon	...making contrast 7
+
+contrast EXT_ObjectME (type T) already in xCon	...making contrast 8
+
+contrast EXT_AttME (type T) already in xCon	...making contrast 9
+
+contrast EXT_Interact (type T) already in xCon	...making contrast 10
+
+contrast INT_ObjectME (type T) already in xCon	...making contrast 11
+
+contrast INT_AttME (type T) already in xCon	...making contrast 12
+
+contrast INT_Interact (type T) already in xCon	...making contrast 13
+
+contrast DoubleSw (type T) already in xCon	...making contrast 14
+
+contrast Obsw_only (type T) already in xCon	...making contrast 15
+
+contrast Attsw_only (type T) already in xCon	...making contrast 16
+
+contrast Nosw (type T) already in xCon	...making contrast 17
+	...making contrast 18
+	...making contrast 19
+	...making contrast 20
+	...making contrast 21
+	...making contrast 22
+	...making contrast 23
+	...making contrast 24
+	...making contrast 25
+	...making contrast 26
+	...making contrast 27
+	...making contrast 28
+	...saving xCon.mat in C:\Tor_Documents\CurrentExperiments\Intext\FMRI\RESULTS\model3\020725js
+	-----------------------------------------------
+	...Estimating contrasts
+	...-----------------------------------------------
+conmatrix =
+  Columns 1 through 27 
+     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26    27
+  Columns 28 through 29 
+    28    29
+	f99_DoCont.m: Contrast 1
+	spm{F} image  1                 :                   ...computing> In C:\Tor_Documents\CurrentExperiments\Intext\FMRI\scripts\intext_run_model1.m at line 28
+ans =
+What do I do with this?
+Problem with 020725js
+Starting 020903lb

@@ -1,0 +1,49 @@
+#! /bin/tcsh 
+# created 10-17-91 dcn ftp raw files from signa2
+# modified by Tor Wager 
+# USE THIS on a remote computer to zip and PUT files to Kosslyn_G5
+# ENTER wildcard as argument
+
+if ($#argv < 1) then
+ echo "$0 [-h hostname] subjcode"
+  echo "please type in: sftp2kosslyn wildcard"
+  echo "subjidcode is subject id, e.g. sftp_put_to_kosslyn ow --> this puts all ow*.tar.gz"
+  exit 1
+endif
+
+if ( "$argv[1]" == "-h") then
+  set hostname = $argv[2]
+   shift
+  shift
+else
+    set hostname = "dyn-233-79.dyn.columbia.edu"
+endif
+*******************************
+
+set sids = $argv[1]
+echo $sids
+set sids = `ls *.tar.gz | grep $sids`
+
+echo " "
+echo "working on files:"
+echo "_________________________"
+echo $sids
+echo "_________________________"
+echo " "
+set pid = $$
+echo "script number is $pid"
+
+echo putting to /Users/scnlab/Documents/Data_and_Tools/IMAGING_DATA/dropbox
+echo cd /Users/scnlab/Kosslyn/Data_and_Tools/IMAGING_DATA/dropbox >> script.$pid
+
+foreach sid ( $sids )
+
+	echo "put $sid" >> script.$pid
+
+end
+
+echo quit >> script.$pid
+
+sftp scnlab@$hostname < script.$pid
+\rm -f script.$$
+

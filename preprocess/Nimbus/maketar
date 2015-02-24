@@ -1,0 +1,21 @@
+#!/bin/sh
+# Author: Christopher Currie
+#         03 / 01 / 04
+# Call with name "maketar" to make a tar file, e.g.,
+#    if you have a directory called fruits, then invoke: ./maketar fruits
+#
+# Call with name "listtar" to see the contents of a tar file, e.g.,
+#    if you have a tar file fruits.tar, then invoke: ./listtar fruits.tar
+#
+# hard to operate in this directory:
+cd /export/data/analyzed/tor/Class
+#
+case $0 in
+     *listtar) TARGS="-tvf $1" ;;
+     *maketar) TARGS="-cvf $1.tar $1" ;;
+     *) echo "Usage: $0 [tar file | directory to tar]"
+        exit 0
+       ;;
+esac
+tar $TARGS
+

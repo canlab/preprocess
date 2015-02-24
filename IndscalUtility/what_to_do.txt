@@ -1,0 +1,14 @@
+organisational stuff:
+check mvroi_shell and apply_cluster_solution and integrate
+names & commenting
+powerpoint
+
+black/blue positive/negative correlation
+pca_npm - 
+
+stepwise_tor - instead of simple correlation within and between
+pattern hypothesis tests - steiger
+subject weights
+power spectrum  (psd.m) - artifact check
+individually defined regions - use cluster_barplot
+
