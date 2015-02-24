@@ -1,1 +1,0 @@
-open voistatGUI.fig
