@@ -1,0 +1,57 @@
+#! /bin/tcsh
+# Function: justAnatom
+#
+# Modified by Christopher Currie, 3 / 2 / 02
+
+# FUNCTION: justReconstruct subjectcode
+#           where subjectcode is a string, ow1, ow2, ... , ow8 (don't quote the string input)
+#
+# This script will create 4D non-aligned TR files, one for each scan, e.g., r1.img, r1.hdr, ... , rN.img, rN.hdr
+# where N = number of scanning sessions.
+# 
+# NOTES:  
+# mdir is the subject directory for preprocessed data, i.e., ow1, ow2, ... , ow8
+# img has names of 4-D images, one for each run
+# images for each run are saved in mdir/scan1, scan2, etc.
+
+echo $SHELL
+
+if ($#argv < 1) then
+  echo please type in: process_subject sidcode
+  echo "e.g., 'justReconstruct ow1'"
+  exit 1
+else
+  set exptname = $argv[1]
+  echo working on subject $exptname
+endif
+
+#
+# start reconstruction
+#
+set mdir = "/export/data/analyzed/tor/Class/$exptname"
+if ( -e $mdir ) then
+   echo Directory $mdir exists . . .
+else
+    mkdir $mdir
+    echo "Created directory: $mdir"
+endif
+     
+cd /export/data/reconstruction 
+echo changing to directory: /export/data/reconstruction
+
+set runs = `ls $exptname`
+echo Processing runs: $runs
+echo Starting reconstruction for $exptname
+matlab -nodesktop -nodisplay << EOF >& $mdir/justReconstruction_log.txt
+          addpath /export/data/analyzed/tor/
+          addpath /export/apps/spm99_macosx
+          addpath /home/twager/scripts
+          exptname = '$exptname/';
+          runs = '$runs';
+          mdir = '$mdir';
+
+          tor_sdt2an(exptname,runs,mdir)
+          quit
+EOF
+echo Finished reconstruction for $exptname
+
