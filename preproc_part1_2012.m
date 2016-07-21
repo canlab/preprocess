@@ -103,6 +103,9 @@ function PREPROC = preproc_part1_2012(PREPROC, varargin)
   spm_jobman('initcfg');
 
   switch(spm_ver)
+    case{'SPM12'}
+      PREPROC = preproc_part1_spm12(PREPROC, correcting_slice_timing, correcting_motion, using_local_copies, ...
+				   verbose, clean_up, save_plots, run_dir_base, acq);
     case{'SPM8'}
       PREPROC = preproc_part1_spm8(PREPROC, correcting_slice_timing, correcting_motion, using_local_copies, ...
 				   verbose, clean_up, save_plots, run_dir_base, acq);
@@ -261,6 +264,48 @@ function PREPROC = preproc_part1_spm8(PREPROC, correcting_slice_timing, correcti
 
 end
 
+%%-------------------------------
+%%|Main function for SPM 12
+%%-------------------------------
+function PREPROC = preproc_part1_spm12(PREPROC, correcting_slice_timing, correcting_motion, using_local_copies, verbose, clean_up, save_plots, run_dir_base, acq)
+
+  mvmt_param_files = [];
+
+  if(using_local_copies)
+    disp('Copying run files to local machine.');
+    run_files = transfer_to_newdir(PREPROC.func_files, tempdir());
+  else
+    run_files = PREPROC.func_files;
+  end
+
+		% Correct for different times of acquisition in slices
+		% add a to filename
+  a_files = spm12_timing_correction(PREPROC, run_files, correcting_slice_timing, verbose, clean_up, save_plots, run_dir_base, acq);
+  if(using_local_copies), disp('Copying "a" files to remote location.'); transfer_to_newdir(a_files, pwd()); end
+
+				% Motion correction
+				% add r to filename
+  [r_files, mvmt_param_files] = spm12_motion_correction(PREPROC, a_files, correcting_motion, using_local_copies, verbose, clean_up, save_plots, run_dir_base);
+  if(using_local_copies), disp('Copying "ra" files to remote location.'); transfer_to_newdir(r_files, pwd()); end
+
+  if(clean_up)
+				% Remove a_files
+    print_header2('ra_files created successfully. Removing a_files');
+    for i = 1:length(a_files)
+      if exist(a_files{i}, 'file')
+        [dirname, fname] = fileparts(a_files{i});
+        eval(['!rm ' fullfile(dirname, fname) '.*']);
+      end
+    end
+  else
+    PREPROC.a_func_files = a_files;
+  end
+
+  PREPROC.ra_func_files = r_files;
+  PREPROC.mvmt_param_files = mvmt_param_files;
+
+end
+
 
 % -------------------------------------------------------------------------
 % SLICE TIMING
@@ -275,6 +320,54 @@ function a_files = spm8_timing_correction(PREPROC, func_files, correcting_slice_
     num_slices = Vfirst_vol(1).dim(3);
     
     slice_timing_job{1}.spm.temporal.st.scans = spm8_image_list(PREPROC, func_files);
+    slice_timing_job{1}.spm.temporal.st.nslices = num_slices;
+    slice_timing_job{1}.spm.temporal.st.tr = PREPROC.TR;
+    slice_timing_job{1}.spm.temporal.st.ta = PREPROC.TR - (PREPROC.TR / num_slices);
+    
+    switch acq
+      case 'interleaved_BU'
+        slice_timing_job{1}.spm.temporal.st.so = [1:2:num_slices 2:2:num_slices]; %interleaved acquisition bottom up
+      case 'interleaved_TD'
+        slice_timing_job{1}.spm.temporal.st.so = [num_slices:-2:1, num_slices-1:-2:1]; %interleaved acquisition top down
+      case 'ascending'
+        slice_timing_job{1}.spm.temporal.st.so = (1:1:num_slices);
+      case 'descending'
+        slice_timing_job{1}.spm.temporal.st.so = (num_slices:-1:1);
+      case 'interleaved_MT'
+        for k = 1:num_slices
+          slice_timing_job{1}.spm.temporal.st.so(k) = (round((num_slices-k)/2 + (rem((num_slices-k),2) * (num_slices - 1)/2)) + 1);
+        end
+      otherwise
+        error('STOP! Unrecognized image acquisition method');
+    end
+    slice_timing_job{1}.spm.temporal.st.refslice = 1; % round(num_slices/2);
+    slice_timing_job{1}.spm.temporal.st.prefix = 'a';
+    
+				% save slice_timing_job
+    savefile = fullfile(PREPROC.basedir, 'Functional', 'Preprocessed', 'canlab_preproc_slice_timing_job.mat');
+    save(savefile, 'slice_timing_job');
+    
+    spm_jobman('run', {slice_timing_job});
+    
+    disp('Acquisition timing correction finished.');
+  else
+    disp('Skipping timing correction.');
+  end
+
+  a_files = prepend_a_letter(func_files, PREPROC.images_per_session, 'a', run_dir_base);
+
+end
+
+%%Not yet adapted or tested.
+function a_files = spm12_timing_correction(PREPROC, func_files, correcting_slice_timing, verbose, clean_up, save_plots, run_dir_base, acq)
+
+  if correcting_slice_timing
+    print_header2('Slice-timing correction started.', acq);
+    
+    Vfirst_vol = spm_vol(func_files{1});
+    num_slices = Vfirst_vol(1).dim(3);
+    
+    slice_timing_job{1}.spm.temporal.st.scans = spm12_image_list(PREPROC, func_files);
     slice_timing_job{1}.spm.temporal.st.nslices = num_slices;
     slice_timing_job{1}.spm.temporal.st.tr = PREPROC.TR;
     slice_timing_job{1}.spm.temporal.st.ta = PREPROC.TR - (PREPROC.TR / num_slices);
@@ -358,6 +451,47 @@ function [r_files, mvmt_param_files] = spm8_motion_correction(PREPROC, a_files, 
 
 end
 
+function [r_files, mvmt_param_files] = spm12_motion_correction(PREPROC, a_files, correcting_motion, using_local_copies, verbose, clean_up, save_plots, run_dir_base)
+  if(correcting_motion)
+    print_header2('Motion correction started.');
+    
+			     % Build job ourself.
+			     % load('motion_correction_spm5_job.mat');
+    
+    def = spm_get_defaults('realign');
+    matlabbatch = {};
+    matlabbatch{1}.spm.spatial.realign.estwrite.eoptions = def.estimate;
+    matlabbatch{1}.spm.spatial.realign.estwrite.roptions = def.write;
+    
+    matlabbatch{1}.spm.spatial.realign.estwrite.eoptions.rtm = 0; % do not register to mean (twice as long)
+    matlabbatch{1}.spm.spatial.realign.estwrite.roptions.mask = 0; % do not mask (will set data to zero at edges!)
+    
+    matlabbatch{1}.spm.spatial.realign.estwrite.data = spm12_image_list(PREPROC, a_files);
+    
+    savefile = fullfile(PREPROC.basedir, 'Functional', 'Preprocessed', 'canlab_preproc_realignment_job.mat');
+    save(savefile, 'matlabbatch');
+    
+    spm_jobman('run', {matlabbatch});
+    
+    disp('Motion correction finished.');
+  else
+    disp('Skipping motion correction.');
+  end
+
+  r_files = prepend_a_letter(a_files, PREPROC.images_per_session, 'r', run_dir_base);
+
+  for i = 1:length(a_files)
+    [pathstr filename ext] = fileparts(a_files{i}(1, :));
+    mvmt_param_files{i} = fullfile(pathstr, ['rp_' filename '.txt']);
+  end
+  r_files = r_files(:);
+
+  if(using_local_copies), transfer_to_newdir(mvmt_param_files, pwd()); end
+
+  if(save_plots), save_plot(r_files{1}); end
+
+end
+
 
 % -------------------------------------------------------------------------
 % FILE COPYING AND CHECKING UTILITY FUNCTIONS
@@ -415,6 +549,39 @@ end
 % -------------------------------------------------------------------------
 
 function run_image_list = spm8_image_list(PREPROC, file_list)
+  num_runs = length(PREPROC.images_per_session);
+
+  if(length(file_list) == num_runs)
+    % EITHER cell array with full image list OR single 4-D image names
+    
+    for i = 1:num_runs
+      if size(file_list{i}, 1) == PREPROC.images_per_session(i)
+		 % we have the full list already % tor edit april 2010
+        for j = 1:PREPROC.images_per_session(i)
+          run_image_list{i}{j} = deblank(file_list{i}(j, :));
+        end
+      else
+		% it's a single image name; expand it and create names
+		% (could use expand_4d_images as well)
+        printf_str = ['%' int2str(size(int2str(max(PREPROC.images_per_session)), 2)) 'd'];
+        for j = 1:PREPROC.images_per_session(i)
+          run_image_list{i}{j} = [file_list{i} ',' sprintf(printf_str, j)];
+        end
+      end
+    end
+    
+  else
+		     % another format; not cell array of length(nruns)
+    st = [0 cumsum(PREPROC.images_per_session(1:end-1))];
+    for i = 1:num_runs
+      for j = 1:PREPROC.images_per_session(i)
+        run_image_list{i}{j} = [file_list{st(i) + j} ',1'];
+      end
+    end
+  end
+end % function
+
+function run_image_list = spm12_image_list(PREPROC, file_list)
   num_runs = length(PREPROC.images_per_session);
 
   if(length(file_list) == num_runs)
