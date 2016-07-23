@@ -440,7 +440,6 @@ if dopart1
     
 end
 
-
 %% -------------------------------------------------------------------------
 % Plot and save movement parameters
 % Save nuisance covariate set with higher-order transformations
