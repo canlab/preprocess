@@ -343,7 +343,6 @@ end % function
 % mean_func = PREPROC.meanfilename_realigned;
 %
 function coreg_anat_to_func(PREPROC, dointeractive)
-%load('coreg_spm5_job');
 
 print_header2('Coregisterng anatomical to mean functional');
 
@@ -353,7 +352,6 @@ coregsource = PREPROC.anat_files;
 
 coregdef = spm_get_defaults('coreg');
 coreg_job = {};
-%matlabbatch{1}.spm.spatial.coreg.estimate
 
 coreg_job{1}.spatial{1}.coreg{1}.estimate.eoptions = coregdef.estimate;
 coreg_job{1}.spatial{1}.coreg{1}.estimate.ref{1} = coregreference; % make robust file get %PREPROC.meanfilename_realigned;
