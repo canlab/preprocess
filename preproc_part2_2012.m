@@ -366,7 +366,9 @@ else
 end
 
 fh = findobj('Type', 'Figure', 'Tag', 'Graphics');
-if ishandle(fh), set(fh, 'Visible', 'on'), end
+if ishandle(fh)
+  set(fh, 'Visible', 'on')
+end
 
 while(~strcmp(status, 'done'))
   anat = PREPROC.anat_files;
