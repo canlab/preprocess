@@ -474,72 +474,43 @@ end % function
 % generate session-specific means
 % -------------------------------------------------------------------------------------------------
 % -------------------------------------------------------------------------------------------------
-
 function mean_wra_func_name = generate_mean_wra_funcs(wra_func_files)
-
-print_header2('Generating mean wra images for each run');
-
-% Make sure these are in expanded format
-wra_func_files = spm_image_list(wra_func_files, 0); % do not expand to individual cells
-
-for i = 1:length(wra_func_files)
-    
+  print_header2('Generating mean wra images for each run');
+  % Make sure these are in expanded format
+  wra_func_files = spm_image_list(wra_func_files, 0); % do not expand to individual cells
+  for i = 1:length(wra_func_files)
     [d f ext] = fileparts(wra_func_files{i}(1, :));
     d = fileparts(d);
     mean_wra_func_name{i, 1} = fullfile(d, sprintf('mean_wra_func_run_%02d%s', i, ext));
-    
     dat = fmri_data(wra_func_files{i});
     m = mean(dat);
     clear dat
     m.fullpath = mean_wra_func_name{i, 1};
     write(m);
-    
+  end
 end
-
-% display - but now done later
-% canlab_preproc_montage_first_volumes(mean_wra_func_name);
-% try_snapnow_for_publish;
-
-end % function
-
-
 % -------------------------------------------------------------------------------------------------
 % -------------------------------------------------------------------------------------------------
 % smoothing
 % -------------------------------------------------------------------------------------------------
 % -------------------------------------------------------------------------------------------------
-
 function PREPROC = smooth_funcs(PREPROC)
-%load('smooth_spm5_job');
-
-print_header2('Smoothing functional images');
-
-%smooth_job.spatial{1}.smooth.data = spm_image_list(PREPROC.wra_func_files);
-
-matlabbatch = {};
-matlabbatch{1}.spm.spatial.smooth = spm_get_defaults('smooth');
-matlabbatch{1}.spm.spatial.smooth.dtype = 0; % data type; 0 = same as before
-matlabbatch{1}.spm.spatial.smooth.im = 0; % implicit mask; 0 = no
-matlabbatch{1}.spm.spatial.smooth.fwhm = [8 8 8]; % override whatever the defaults were with this
-matlabbatch{1}.spm.spatial.smooth.data = spm_image_list(PREPROC.wra_func_files, 1); % individual cells for each volume
-
-% Save the job
-% -------------------------------------------------------------------------------------------------
-savefile = fullfile(PREPROC.basedir, 'Functional', 'Preprocessed', 'canlab_preproc_smooth_job.mat');
-save(savefile, 'matlabbatch');
-
-% Run the job
-% -------------------------------------------------------------------------------------------------
-spm_jobman('run', matlabbatch);
-
-% Display and save output
-% -------------------------------------------------------------------------------------------------
-PREPROC.swra_func_files = prepend_a_letter(PREPROC.wra_func_files, PREPROC.images_per_session, 's');
-canlab_preproc_show_montage(PREPROC.swra_func_files, fullfile(PREPROC.qcdir, 'swra_func_files.png'));
-
-end % function
-
-
+  print_header2('Smoothing functional images');
+  matlabbatch = {};
+  matlabbatch{1}.spm.spatial.smooth = spm_get_defaults('smooth');
+  matlabbatch{1}.spm.spatial.smooth.dtype = 0; % data type; 0 = same as before
+  matlabbatch{1}.spm.spatial.smooth.im = 0; % implicit mask; 0 = no
+  matlabbatch{1}.spm.spatial.smooth.fwhm = [8 8 8]; % override whatever the defaults were with this
+  matlabbatch{1}.spm.spatial.smooth.data = spm_image_list(PREPROC.wra_func_files, 1); % individual cells for each volume
+  % Save the job
+  savefile = fullfile(PREPROC.basedir, 'Functional', 'Preprocessed', 'canlab_preproc_smooth_job.mat');
+  save(savefile, 'matlabbatch');
+  % Run the job
+  spm_jobman('run', matlabbatch);
+  % Display and save output
+  PREPROC.swra_func_files = prepend_a_letter(PREPROC.wra_func_files, PREPROC.images_per_session, 's');
+  canlab_preproc_show_montage(PREPROC.swra_func_files, fullfile(PREPROC.qcdir, 'swra_func_files.png'));
+end
 % -------------------------------------------------------------------------------------------------
 % -------------------------------------------------------------------------------------------------
 % utility functions
