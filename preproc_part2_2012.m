@@ -371,11 +371,9 @@ fh = findobj('Type', 'Figure', 'Tag', 'Graphics');
 if ishandle(fh), set(fh, 'Visible', 'on'), end
 
 while(~strcmp(status, 'done'))
-    %     anat = PREPROC.anat_files;
-    %     mean_func = PREPROC.meanfilename_realigned;
-    %
-    %     coreg_job.spatial{1}.coreg{1}.estimate.source = {[anat ',1']};
-    %     coreg_job.spatial{1}.coreg{1}.estimate.ref = {[mean_func ',1']};
+  anat = PREPROC.anat_files;
+  mean_func = PREPROC.meanfilename_realigned;
+  coreg_job.spatial{1}.coreg{1}.estimate.ref = {[mean_func ',1']};
     
     spm_check_registration(strvcat(coregsource, coregreference));
     spm_orthviews('Reposition', [0 0 0]);
