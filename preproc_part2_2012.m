@@ -343,70 +343,53 @@ end % function
 % mean_func = PREPROC.meanfilename_realigned;
 %
 function coreg_anat_to_func(PREPROC, dointeractive)
-
-print_header2('Coregisterng anatomical to mean functional');
-
-% get images: reference is functional, source is anatomical
-coregreference = deblank(PREPROC.meanfilename_realigned);    %PREPROC.ra_func_files{1}(1,:));
-coregsource = PREPROC.anat_files;
-
-coregdef = spm_get_defaults('coreg');
-coreg_job = {};
-
-coreg_job{1}.spatial{1}.coreg{1}.estimate.eoptions = coregdef.estimate;
-coreg_job{1}.spatial{1}.coreg{1}.estimate.ref{1} = coregreference; % make robust file get %PREPROC.meanfilename_realigned;
-coreg_job{1}.spatial{1}.coreg{1}.estimate.source{1} = coregsource;
-
-spm_jobman('run', {coreg_job});
-
-if dointeractive
+  print_header2('Coregisterng anatomical to mean functional');
+  % get images: reference is functional, source is anatomical
+  coregreference = deblank(PREPROC.meanfilename_realigned);    %PREPROC.ra_func_files{1}(1,:));
+  coregsource = PREPROC.anat_files;
+  coregdef = spm_get_defaults('coreg');
+  coreg_job = {};
+  coreg_job{1}.spatial{1}.coreg{1}.estimate.eoptions = coregdef.estimate;
+  coreg_job{1}.spatial{1}.coreg{1}.estimate.ref{1} = coregreference; % make robust file get %PREPROC.meanfilename_realigned;
+  coreg_job{1}.spatial{1}.coreg{1}.estimate.source{1} = coregsource;
+  spm_jobman('run', {coreg_job});
+  if dointeractive
     status = '';
-else
+  else
     status = 'done';
-end
-
-fh = findobj('Type', 'Figure', 'Tag', 'Graphics');
-if ishandle(fh)
-  set(fh, 'Visible', 'on')
-end
-
-while(~strcmp(status, 'done'))
-  anat = PREPROC.anat_files;
-  mean_func = PREPROC.meanfilename_realigned;
-  coreg_job.spatial{1}.coreg{1}.estimate.ref = {[mean_func ',1']};
-    
+  end
+  fh = findobj('Type', 'Figure', 'Tag', 'Graphics');
+  if ishandle(fh)
+    set(fh, 'Visible', 'on')
+  end
+  while(~strcmp(status, 'done'))
+    anat = PREPROC.anat_files;
+    mean_func = PREPROC.meanfilename_realigned;
+    coreg_job.spatial{1}.coreg{1}.estimate.ref = {[mean_func ',1']};
     spm_check_registration(strvcat(coregsource, coregreference));
     spm_orthviews('Reposition', [0 0 0]);
     status = input('Type "done" if finished, or press return to adjust anatomical: ', 's');
-    
     if(~strcmp(status, 'done'))
-        fprintf('In dir: %s\n', pwd());
-        fprintf('Use spm_image to shift anatomical image to better match the mean functional.\n');
-        fprintf('Adjust the parameters (right, forward, up, pitch, roll, yaw) to alter the anatomical image.\n');
-        fprintf('When you think you have it, click on "Reorient images..." and choose "%s" to apply the changes.\n', anat);
-        fprintf('To check your changes, type "spm_check_registration(strvcat(anat, mean_func))"\n');
-        fprintf('When you''re all done, type "return" and it''ll go through another pass using your changes.\n');
-        
-        spm_image('init', coregsource);
-        spm_orthviews('Reposition', [0 0 0]);
-        
-        keyboard;
-        
-        spm_jobman('run', {coreg_job});
+      fprintf('In dir: %s\n', pwd());
+      fprintf('Use spm_image to shift anatomical image to better match the mean functional.\n');
+      fprintf('Adjust the parameters (right, forward, up, pitch, roll, yaw) to alter the anatomical image.\n');
+      fprintf('When you think you have it, click on "Reorient images..." and choose "%s" to apply the changes.\n', anat);
+      fprintf('To check your changes, type "spm_check_registration(strvcat(anat, mean_func))"\n');
+      fprintf('When you''re all done, type "return" and it''ll go through another pass using your changes.\n');
+      spm_image('init', coregsource);
+      spm_orthviews('Reposition', [0 0 0]);
+      keyboard;
+      spm_jobman('run', {coreg_job});
     end
-end
-
-if ~dointeractive
+  end
+  if ~dointeractive
     spm_check_registration(strvcat(coregsource, coregreference, PREPROC.meanfilename_realigned));
     spm_orthviews('Reposition', [0 0 0]);
+  end
+  scn_export_papersetup(400);
+  saveas(gcf, fullfile(PREPROC.qcdir, 'coregistration.png'));
+  try_snapnow_for_publish
 end
-
-scn_export_papersetup(400);
-saveas(gcf, fullfile(PREPROC.qcdir, 'coregistration.png'));
-
-try_snapnow_for_publish
-end% function
-
 
 % -------------------------------------------------------------------------------------------------
 % -------------------------------------------------------------------------------------------------
