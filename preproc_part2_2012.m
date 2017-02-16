@@ -389,7 +389,6 @@ function coreg_anat_to_func(PREPROC, dointeractive)
   saveas(gcf, fullfile(PREPROC.qcdir, 'coregistration.png'));
   try_snapnow_for_publish
 end
-
 % -------------------------------------------------------------------------------------------------
 % -------------------------------------------------------------------------------------------------
 % segment_and_normalize
@@ -404,70 +403,46 @@ end
 %                 PREPROC.anat_files   % single anatomical image
 %                 PREPROC.meanfilename_realigned  % single func image
 %                 PREPROC.files_to_warp   % list of ALL func images for the subject
-
 function PREPROC = segment_and_normalize(PREPROC)
-
-% Define the output names so we save them for later
-% Saved in: wra_func_files and wanat_files fields
+  % Define the output names so we save them for later
+  % Saved in: wra_func_files and wanat_files fields
 % -------------------------------------------------------------------------------------------------
-
-PREPROC.wra_func_files = prepend_a_letter(PREPROC.files_to_warp, PREPROC.images_per_session, 'w');
-
-wanat_files = prepend_a_letter({PREPROC.anat_files}, 1, 'w');
-wanat_files = wanat_files{1};
-PREPROC.wanat_files = wanat_files;
-
-wmean_ra_func_files = prepend_a_letter({PREPROC.meanfilename_realigned}, 1, 'w');
-wmean_ra_func_files = wmean_ra_func_files{1};
-PREPROC.wmean_ra_func_files = wmean_ra_func_files;
-
-[d f] = fileparts(PREPROC.anat_files);
-PREPROC.norm_parameter_file = fullfile(d, [f '_seg_sn.mat']);
-
-% Load (define) and customize the spm jobs for segment+norm and
-% application to functional images (writenorm)
-% -------------------------------------------------------------------------------------------------
-
-load('segment_spm5_job');
-load('writenorm_spm5_job');
-
-% NOTE: THIS WILL NOT WORK for multiple subjects!!!
-segment_job.spatial{1}.preproc.data = spm_image_list(PREPROC.anat_files);
-segment_job.spatial{1}.preproc.opts.tpm = {which('grey.nii'); which('white.nii'); which('csf.nii')};
-
-cnt = 1;
-
-% define the name of the normalization parameter file for later
-writenorm_job.spatial{1}.normalise{1}.write.subj(cnt).matname = {PREPROC.norm_parameter_file};
-writenorm_job.spatial{1}.normalise{1}.write.subj(cnt).resample = spm_image_list([PREPROC.anat_files; PREPROC.meanfilename_realigned; PREPROC.files_to_warp]);
-writenorm_job.spatial{1}.normalise{1}.write.subj(cnt).resample = cellstr(strvcat(writenorm_job.spatial{1}.normalise{1}.write.subj(cnt).resample{:}));
-
-% Save the job
-% -------------------------------------------------------------------------------------------------
-savefile = fullfile(PREPROC.basedir, 'Functional', 'Preprocessed', 'canlab_preproc_norm_job.mat');
-save(savefile, 'segment_job', 'writenorm_job');
-
-% Now run it
-% -------------------------------------------------------------------------------------------------
-
-disp('Segmenting and normalizing all subjects');
-spm_jobman('run', {segment_job writenorm_job});
-
-% Now run it
-% -------------------------------------------------------------------------------------------------
-spm_check_registration(strvcat(wanat_files, wmean_ra_func_files, which('avg152T1.nii')));
-spm_orthviews('Reposition', [0 0 0]);
-
-scn_export_papersetup(400);
-saveas(gcf, fullfile(PREPROC.qcdir, 'normalization.png'));
-
-canlab_preproc_show_montage(PREPROC.wanat_files, fullfile(PREPROC.qcdir, 'warped_anatomical.png'));
-canlab_preproc_show_montage(PREPROC.wra_func_files, fullfile(PREPROC.qcdir, 'wra_func_files.png'));
-
-try_snapnow_for_publish
-
-end % function
-
+  PREPROC.wra_func_files = prepend_a_letter(PREPROC.files_to_warp, PREPROC.images_per_session, 'w');
+  wanat_files = prepend_a_letter({PREPROC.anat_files}, 1, 'w');
+  wanat_files = wanat_files{1};
+  PREPROC.wanat_files = wanat_files;
+  wmean_ra_func_files = prepend_a_letter({PREPROC.meanfilename_realigned}, 1, 'w');
+  wmean_ra_func_files = wmean_ra_func_files{1};
+  PREPROC.wmean_ra_func_files = wmean_ra_func_files;
+  [d f] = fileparts(PREPROC.anat_files);
+  PREPROC.norm_parameter_file = fullfile(d, [f '_seg_sn.mat']);
+  % Load (define) and customize the spm jobs for segment+norm and
+  % application to functional images (writenorm)
+  load('segment_spm5_job');
+  load('writenorm_spm5_job');
+  % NOTE: THIS WILL NOT WORK for multiple subjects!!!
+  segment_job.spatial{1}.preproc.data = spm_image_list(PREPROC.anat_files);
+  segment_job.spatial{1}.preproc.opts.tpm = {which('grey.nii'); which('white.nii'); which('csf.nii')};
+  cnt = 1;
+  % define the name of the normalization parameter file for later
+  writenorm_job.spatial{1}.normalise{1}.write.subj(cnt).matname = {PREPROC.norm_parameter_file};
+  writenorm_job.spatial{1}.normalise{1}.write.subj(cnt).resample = spm_image_list([PREPROC.anat_files; PREPROC.meanfilename_realigned; PREPROC.files_to_warp]);
+  writenorm_job.spatial{1}.normalise{1}.write.subj(cnt).resample = cellstr(strvcat(writenorm_job.spatial{1}.normalise{1}.write.subj(cnt).resample{:}));
+  % Save the job
+  savefile = fullfile(PREPROC.basedir, 'Functional', 'Preprocessed', 'canlab_preproc_norm_job.mat');
+  save(savefile, 'segment_job', 'writenorm_job');
+  % Now run it
+  disp('Segmenting and normalizing all subjects');
+  spm_jobman('run', {segment_job writenorm_job});
+  % Now run it
+  spm_check_registration(strvcat(wanat_files, wmean_ra_func_files, which('avg152T1.nii')));
+  spm_orthviews('Reposition', [0 0 0]);
+  scn_export_papersetup(400);
+  saveas(gcf, fullfile(PREPROC.qcdir, 'normalization.png'));
+  canlab_preproc_show_montage(PREPROC.wanat_files, fullfile(PREPROC.qcdir, 'warped_anatomical.png'));
+  canlab_preproc_show_montage(PREPROC.wra_func_files, fullfile(PREPROC.qcdir, 'wra_func_files.png'));
+  try_snapnow_for_publish
+end
 % -------------------------------------------------------------------------------------------------
 % -------------------------------------------------------------------------------------------------
 % generate session-specific means
