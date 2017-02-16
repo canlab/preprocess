@@ -365,7 +365,6 @@ function coreg_anat_to_func(PREPROC, dointeractive)
   while(~strcmp(status, 'done'))
     anat = PREPROC.anat_files;
     mean_func = PREPROC.meanfilename_realigned;
-    coreg_job.spatial{1}.coreg{1}.estimate.ref = {[mean_func ',1']};
     spm_check_registration(strvcat(coregsource, coregreference));
     spm_orthviews('Reposition', [0 0 0]);
     status = input('Type "done" if finished, or press return to adjust anatomical: ', 's');
