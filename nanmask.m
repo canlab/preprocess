@@ -9,9 +9,6 @@ function out = nanmask(P,varargin)
 % including only voxels in the output image where the mask image values are
 % greater than zero.
 % an empty 2nd argument calls the spm gui to ask for a mask image
-
-warning off
-
 if length(varargin) > 0, 
     maskP = varargin{1}; ,
     if isempty(maskP)
@@ -55,7 +52,5 @@ for i = 1:size(P,1)
     end
     
 end
-
-warning on
-
 return
+
