@@ -82,7 +82,6 @@ spm_ver = 'SPM8';  % Tor changed default version, 8/9/12
 
 parse_inputs();
 
-use_spm(spm_ver);
 spm('defaults', 'fmri')
 
 PREPROC = check_preproc(PREPROC); % Sets PREPROC.files_to_warp based on ra_func_files if needed.

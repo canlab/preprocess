@@ -99,7 +99,6 @@ function PREPROC = preproc_part1_2012(PREPROC, varargin)
     fprintf('Saving preprocessed images in:\n%s\n', run_dir_base)
   end
 
-  use_spm(spm_ver);
   spm_jobman('initcfg');
 
   switch(spm_ver)
