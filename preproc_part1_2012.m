@@ -102,7 +102,7 @@ function PREPROC = preproc_part1_2012(PREPROC, varargin)
   spm_jobman('initcfg');
 
   switch(spm_ver)
-    case{'SPM8'}
+    case{'SPM8', 'SPM12'}
       PREPROC = preproc_part1_spm8(PREPROC, correcting_slice_timing, correcting_motion, using_local_copies, ...
 				   verbose, clean_up, save_plots, run_dir_base, acq);
       
@@ -183,6 +183,8 @@ function PREPROC = preproc_part1_2012(PREPROC, varargin)
             spm_ver = 'SPM5';
           case 'SPM8'
             spm_ver = 'SPM8';
+	  case 'SPM12'
+            spm_ver = 'SPM12';
           case {'local', 'copy local' 'use local copies'}
             using_local_copies = varargin{i+1};
           case {'slice_timing', 'slice timing'}

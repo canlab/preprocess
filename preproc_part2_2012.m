@@ -13,7 +13,7 @@
 %   .inplane_files - cellstr of subjects' T1 images with the same number of slices as a functional image,
 %        but much higher resolution within the slice - useful as an intermediate image, but not required
 %   .template_image - canonical image to warp to - (default: avg152T1.nii);
-%   .spm_ver: 'SPM2' or 'SPM5' - (default: SPM5)
+%   .spm_ver: 'SPM2' or 'SPM5' - (default: SPM8)
 %
 % Other parameters
 %   set_origins - set origins of images (default: 1)
