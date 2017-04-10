@@ -54,11 +54,11 @@ for i = 1:nruns
     % move ra (and wra, swra if present) vols and mat files
     % continue gracefully if there aren't any ra files to move and checks Preproc folder - 3/20/13 - Luke
     % ----------------------------------------------------------------------
-    raexist = dir(fullfile(basedir,'Functional','Raw', rundirs(i).name,'ra*'));
+    raexist = dir(fullfile(rundirs(i).folder, rundirs(i).name,'ra*'));
     
     if ~isempty(raexist)
         
-        tomove_wildcard{i} = fullfile(basedir, 'Functional', 'Raw', rundirs(i).name, '*ra*.*');
+        tomove_wildcard{i} = fullfile(rundirs(i).folder, rundirs(i).name, '*ra*.*');
         tomove{i} = filenames(tomove_wildcard{i},'char','absolute');
         
         for n = 1:size(tomove{i},1)
@@ -86,7 +86,7 @@ for i = 1:nruns
     
     if ~isempty(TIRexist)
         
-        tomove_wildcard{i} = fullfile(basedir, 'Functional', 'Raw', rundirs(i).name, ['*TIR_*.*']);
+        tomove_wildcard{i} = fullfile(rundirs(i).folder, rundirs(i).name, ['*TIR_*.*']);
         tomove{i} = filenames(tomove_wildcard{i},'char','absolute');
         
         for n = 1:size(tomove{i},1)
@@ -102,11 +102,11 @@ for i = 1:nruns
 
     %txt{i} = filenames(fullfile(basedir, 'Functional','Raw',rundirs(i).name,'*.txt'),'char','absolute');
     
-    rpexist = dir(fullfile(basedir,'Functional','Raw', rundirs(i).name,'rp*.txt'));
+    rpexist = dir(fullfile(rundirs(i).folder, rundirs(i).name,'rp*.txt'));
     
     if ~isempty(rpexist)
         
-        txt{i} = filenames(fullfile(basedir, 'Functional', 'Raw', rundirs(i).name,'rp*.txt'),'char', 'absolute');
+        txt{i} = filenames(fullfile(rundirs(i).folder, rundirs(i).name,'rp*.txt'),'char', 'absolute');
         
         for n = 1:size(txt{i}, 1)
             myfile = deblank(txt{i}(n, :));
@@ -131,7 +131,7 @@ for i = 1:nruns
     
     if ~isempty(rpTIRexist)
         
-        txt{i} = filenames(fullfile(basedir, 'Functional', 'Raw', rundirs(i).name,'rpTIR*.txt'),'char', 'absolute');
+        txt{i} = filenames(fullfile(rundirs(i).folder, rundirs(i).name,'rpTIR*.txt'),'char', 'absolute');
         
         for n = 1:size(txt{i}, 1)
             myfile = deblank(txt{i}(n, :));
