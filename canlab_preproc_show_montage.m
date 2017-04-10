@@ -15,12 +15,20 @@ function canlab_preproc_show_montage(imagename, savefilename)
 % scn_export_papersetup(300);
 % saveas(fh, savefilename);
 
+close all;
 canlab_preproc_montage_first_volumes(imagename)
 
 if nargin > 1
     scn_export_papersetup(800);
-    
-    saveas(gcf, savefilename);
+    h = findobj('Type','figure');
+    if numel(h)>1
+        [d, f] = fileparts(savefilename);
+        for i = 1:numel(h)
+            saveas(h(i), fullfile(d, [f num2str(i) '.png']));
+        end
+    else
+        saveas(h, savefilename);
+    end
     
 end
 
