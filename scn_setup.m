@@ -14,9 +14,9 @@ function scn_setup()
     global FSLDIR;
     FSLDIR = '/usr/local/fsl';
     if(~exist([FSLDIR '/bin/fslchfiletype'], 'file'))
-        FSLDIR = '/Applications/FSL/fsl';
+        FSLDIR='/projects/ics/software/fsl/5.0.7'; % Setting FSLDIR for blanca.
     end
-
+    
     global ANA4DTO3D
     ANA4DTO3D = '/sw/bin/ana4dto3d';
     if(~exist(ANA4DTO3D, 'file'))
