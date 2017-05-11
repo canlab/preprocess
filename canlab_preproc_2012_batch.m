@@ -118,16 +118,9 @@ for i = 1:numel(varargin)
             case 'no_reorientation'
                 do_reorient = 0;
             otherwise
-                warning(sprintf('Unknown character varargin entered: %s  Unknown use, skipping',varargin{i}))
+                warning(sprintf('This string is not an option : %s  Unknown use, skipping',varargin{i}))
         end
     end
-end
-
-%dream flag trumps everything else
-if any(strcmp('dream', varargin))
-    do_interactive=0;
-    do_reorient=0;
-    dream=1;
 end
 
 %check whether datadir entered as a variable
