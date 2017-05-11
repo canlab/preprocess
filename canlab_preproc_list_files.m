@@ -31,15 +31,19 @@ if numcards == 0  % No run wildcards; files are in raw directly
     
 elseif numcards == 1
     rundirs = dir(fullfile(basedir, 'Functional', 'Raw', run_wildcard));
+    rundirs=rundirs(~ismember({rundirs.name},{'.','..'}));
 elseif numcards == 2
     smalldirs = dir(fullfile(basedir, 'Functional', 'Raw', deblank(run_wildcard(1,:))));
+    smalldirs=smalldirs(~ismember({smalldirs.name},{'.','..'}));
     smallnum = numel(smalldirs);
     
     rundirs = [];
     for n=1:length(smalldirs)
         tempdirs = dir(fullfile(basedir, 'Functional', 'Raw', smalldirs(n).name, deblank(run_wildcard(2,:))));
-        rundirs = [rundirs; dir(fullfile(basedir, 'Functional', 'Raw', smalldirs(n).name, deblank(run_wildcard(2,:))))]; %#ok
-        
+        tempdirs=tempdirs(~ismember({tempdirs.name},{'.','..'}));
+        extradirs=dir(fullfile(basedir, 'Functional', 'Raw', smalldirs(n).name, deblank(run_wildcard(2,:))))
+        extradirs=extradirs(~ismember({extradirs.name},{'.','..'}));
+        rundirs = [rundirs; extradirs];
         smallernum = numel(tempdirs);
         if n==1, prevsmallernum = 0; end %doesn't matter if n=1 anyways
         
