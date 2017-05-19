@@ -336,10 +336,12 @@ if dodatachecks
     if ~isempty(fh)
         sz = get(0, 'screensize');
         % set(fh, 'Position', [50 sz(4)-50 sz(3)./2 sz(4)./2])
-        set(fh, 'Position', [50 sz(4)*.2 sz(3)*.65 sz(4)*.75]) % Wani modified to make this visible
+        set(fh, 'Position', [50 sz(4)*.2 sz(3)*.65 sz(4)*.75])
+	set(fh, 'Visible', 'off');
         figure(fh);
         delete(subplot(2, 3, 6));
         figure(fh);
+	set(fh, 'Visible', 'off');
         axh = subplot(2, 3, 5);
         set(axh, 'Position', [0.4108    0.1100    0.5134    0.3394]);
         axes(axh);
