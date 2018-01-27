@@ -50,7 +50,7 @@ for i = 1:n
     
     axh = subplot(n, 1, i);
     
-    fastmontage(dat, 'axial', 'spacing', spacing, 'slices_per_row', 12); % every 4th slice
+    display_slices(dat, 'axial', 'spacing', spacing, 'slices_per_row', 12); % every 4th slice
     
     title(['Run ' num2str(i)])
     
@@ -74,7 +74,7 @@ if dosplit
         
         axh = subplot(n_imgs-n, 1, i-n);
         
-        fastmontage(dat, 'axial', 'spacing', spacing, 'slices_per_row', 12); % every 4th slice
+        display_slices(dat, 'axial', 'spacing', spacing, 'slices_per_row', 12); % every 4th slice
         
         title(['Run ' num2str(i)])
         
