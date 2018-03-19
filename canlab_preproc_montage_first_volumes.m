@@ -38,10 +38,23 @@ create_figure('First_volumes', n, 1);
 
 % enforce one row, and set scaling across all images
 % use mask that is one image, so hopefully show all voxels
-dat = fmri_data(char(imgs{:}), imgs{1}); 
-spacing = ceil(dat.volInfo.dim(3) ./ 12);
+% Wani: sometimes, imgs are in a different space. 
+try 
+    dat = fmri_data(char(imgs{:}), imgs{1}); 
+    d = dat.dat(:); 
+    spacing = ceil(dat.volInfo.dim(3) ./ 12);
+    spacing = repmat(spacing, n, 1);
+catch
+    dat_dat = [];
+    for i = 1:n
+        temp = fmri_data(char(imgs{i}), imgs{i}); 
+        dat_dat = [dat_dat; temp.dat];
+        spacing(i) = ceil(temp.volInfo.dim(3) ./ 12);
+    end
+    d = dat_dat(:); 
+end
 
-d = dat.dat(:); d(d == 0 | isnan(d)) = [];
+d(d == 0 | isnan(d)) = [];
 clim = [prctile(d, 5) prctile(d, 95)];
 
 for i = 1:n
@@ -50,7 +63,7 @@ for i = 1:n
     
     axh = subplot(n, 1, i);
     
-    display_slices(dat, 'axial', 'spacing', spacing, 'slices_per_row', 12); % every 4th slice
+    display_slices(dat, 'axial', 'spacing', spacing(i), 'slices_per_row', 12, 'voxelspace'); % every 4th slice
     
     title(['Run ' num2str(i)])
     
@@ -74,7 +87,7 @@ if dosplit
         
         axh = subplot(n_imgs-n, 1, i-n);
         
-        display_slices(dat, 'axial', 'spacing', spacing, 'slices_per_row', 12); % every 4th slice
+        display_slices(dat, 'axial', 'spacing', spacing, 'slices_per_row', 12, 'voxelspace'); % every 4th slice
         
         title(['Run ' num2str(i)])
         
